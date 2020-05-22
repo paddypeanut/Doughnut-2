@@ -1,0 +1,161 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello ManagerController!{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 800px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+    .wide-col {width:250px}
+</style>
+
+<script>
+$.getJSON("http://api.openweathermap.org/data/2.5/weather?q=Dublin,IE&units=metric&appid=c2bd91d633daf99c8df50d25899ba1f9",function(weather){
+	var weatherTemp = weather.main.temp;
+	var weatherWindSpeed = weather.wind.speed;
+	var weatherDesc = weather.weather[0].description;
+	var weatherLocation = weather.name;
+
+	$('#weather-content').html('<strong>Location:</strong> '+ weatherLocation +
+								' <strong>Temperature:</strong> ' + weatherTemp +
+								' <strong>Wind Speed:</strong> ' + weatherWindSpeed + 
+								' <strong>Description:</strong> ' + weatherDesc);
+
+})
+</script>
+
+<!-- Start of first page -->
+<div data-role="page" id="manager">
+	<div class="example-wrapper">
+
+		<div role="main" class="ui-content ui-body-a">
+		<div id="weather-content"></div>
+			<h1>Manager</h1>
+			<hr>
+			<div id="progress-orders"></div>
+
+			<div id="dispatched-orders"></div>
+
+			<div id="complete-orders"></div>
+
+			<div id="order-by-date">
+				<label for="start-date">From Month:</label>
+
+					<select id="start-date">
+					  <option value="01">January</option>
+					  <option value="02">February</option>
+					  <option value="03">March</option>
+					  <option value="04">April</option>
+					  <option value="05">May</option>
+					  <option value="06">June</option>
+					  <option value="07">July</option>
+					  <option value="08">August</option>
+					  <option value="09">September</option>
+					  <option value="10">October</option>
+					  <option value="11">November</option>
+					  <option value="12">December</option>
+					</select>
+
+	  			<label for="end-date">To Month:</label>
+
+					<select id="end-date">
+					  <option value="01">January</option>
+					  <option value="02">February</option>
+					  <option value="03">March</option>
+					  <option value="04">April</option>
+					  <option value="05">May</option>
+					  <option value="06">June</option>
+					  <option value="07">July</option>
+					  <option value="08">August</option>
+					  <option value="09">September</option>
+					  <option value="10">October</option>
+					  <option value="11">November</option>
+					  <option value="12">December</option>
+					</select>
+
+  				<button id="submit-dates">Submit</button>
+  				<div id="date-results"></div>
+
+			</div>
+			
+		</div>
+		<!-- /content -->
+	</div>
+</div>
+<script>
+$.post("/ManagersOrders", {type:'progress'}).done(function(data){
+	$('#progress-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+	
+	var progress = $('#progress-count').html();
+	console.log('progress:'+progress);
+
+	$('.cancel-order').on('click',function(event){
+	var cancelId = $(this).closest('tr').find('.order-id').html();
+	$.post("/ManagersOrders" , {type:'cancel', id:cancelId}).done(function(data){
+	window.location="/Manager";
+
+	
+	
+	
+
+	});
+});
+});
+
+$.post("/ManagersOrders", {type: 'dispatched'}).done(function(data){
+	$('#dispatched-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+	var dispatch = $('#dispatch-count').html();
+	console.log('dispatch:'+dispatch);
+});
+
+$.post("/ManagersOrders", {type:'complete'}).done(function(data){
+	$('#complete-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+	var complete = $('#complete-count').html();
+	console.log('complete:'+ complete);
+})
+
+
+$('#submit-dates').on('click', function(event){
+	var startDate = $('#start-date').children("option:selected").val();
+	var endDate = $('#end-date').children("option:selected").val();
+
+	console.log(startDate);
+	console.log(endDate);
+
+	
+
+	$.post("/ManagersOrders", {type:'filterdates' , start:startDate , end:endDate}).done(function(data){
+		$('#date-results').html(data);
+	});
+});
+
+function replaceComma(x){
+	$('.single-order').each(function(){
+		var oldText = $(this).closest('tr').find(x).html();
+		var newText = oldText.replace(/,/g, '<br>');
+		console.log(newText);
+		$(this).closest('.single-order').find(x).html(newText);
+	})
+}
+
+function formatDate(x){
+	var y = x.split('-');
+	var z = y[2] + '-' + y[1] + '-' +y[0].slice(-2);
+
+	return z;
+}
+
+
+</script>
+
+
+
+
+
+{% endblock %}

@@ -1,0 +1,104 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Hello DriverController!{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 1024px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+    .wide-col {width:250px}
+</style>
+
+<!-- Start of first page -->
+<div data-role="page" id="previousorders">
+	<div class="example-wrapper ui-body-a">
+
+		<div role="main" class="ui-content">
+			<div id="weather-content"></div>
+
+			<h2>Orders in Progress</h2>
+			<div id="pending-orders"></div>
+
+			<h2>Orders out for Delivery</h2>
+			<div id="progress-orders"></div>
+
+			<h2>Completed Orders</h2>
+			<div id="completed-orders"></div>
+			
+		</div>
+		<!-- /content -->
+	</div>
+</div>
+
+<script>
+
+$.getJSON("http://api.openweathermap.org/data/2.5/weather?q=Dublin,IE&units=metric&appid=c2bd91d633daf99c8df50d25899ba1f9",function(weather){
+	var weatherTemp = weather.main.temp;
+	var weatherWindSpeed = weather.wind.speed;
+	var weatherDesc = weather.weather[0].description;
+	var weatherLocation = weather.name;
+
+	$('#weather-content').html('<strong>Location:</strong> '+ weatherLocation +
+								' <strong>Temperature:</strong> ' + weatherTemp +
+								' <strong>Wind Speed:</strong> ' + weatherWindSpeed + 
+								' <strong>Description:</strong> ' + weatherDesc);
+
+})
+
+var user_id =localStorage.getItem('user_id');
+console.log(user_id);
+
+
+	$.post("/AvailableOrders").done(function(data){
+	$('#pending-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+
+
+	
+
+	$('.collect-order').on('click', function(event){
+		var orderId = $(this).closest('tr').find('.order-id').html();
+		console.log(orderId);
+		$.post("/OrderStatus",{type:'collect', orderid:orderId, user:user_id}).done(function(data){
+		window.location="/driver"
+		});
+	});
+
+});
+
+$.post("/ProgressOrders", {id:user_id}).done(function(data){
+	$('#progress-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+
+	
+	$('.deliver-order').on('click',function(event){
+		var orderId = $(this).closest('tr').find('.order-id').html();
+		$.post("/OrderStatus",{type:'delivered', orderid:orderId}).done(function(data){
+		window.location="/driver"
+		});
+	});
+
+	});
+
+$.post("/CompletedOrders",{id:user_id}).done(function(data){
+	$('#completed-orders').html(data);
+	replaceComma('.format-text');
+	replaceComma('.format-add-text');
+	});
+
+
+
+function replaceComma(x){
+	$('.single-order').each(function(){
+		var oldText = $(this).closest('tr').find(x).html();
+		var newText = oldText.replace(/,/g, '<br>');
+		$(this).closest('.single-order').find(x).html(newText);
+	})
+}
+
+
+
+</script>
+{% endblock %}

@@ -1,0 +1,228 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Customer!{% endblock %}
+
+{% block body %}
+<style>
+    .example-wrapper { margin: 1em auto; max-width: 1024px; width: 95%; font: 18px/1.5 sans-serif; }
+    .example-wrapper code { background: #F5F5F5; padding: 2px 6px; }
+</style>
+
+<script>
+$.getJSON("http://api.openweathermap.org/data/2.5/weather?q=Dublin,IE&units=metric&appid=c2bd91d633daf99c8df50d25899ba1f9",function(weather){
+	var weatherTemp = weather.main.temp;
+	var weatherWindSpeed = weather.wind.speed;
+	var weatherDesc = weather.weather[0].description;
+	var weatherLocation = weather.name;
+
+	$('#weather-content').html('<strong>Location:</strong> '+ weatherLocation +
+								' <strong>Temperature:</strong> ' + weatherTemp +
+								' <strong>Wind Speed:</strong> ' + weatherWindSpeed + 
+								' <strong>Description:</strong> ' + weatherDesc);
+
+})
+</script>
+<div id="weather-content"></div>
+<div data-role="page" id="order">
+	<div class="example-wrapper ui-body-a padding-20">
+    	<h1>Order</h1>
+
+    	<div id="products-wrapper"></div>
+    	<button id="addToCart" onclick="addToCart()">Add to Cart</button>
+    	<a href="/customer#basket">View Basket</a>
+	</div>
+</div>
+
+<!-- Start of first page -->
+<div data-role="page" id="basket">
+	<div class="example-wrapper ui-body-a">
+
+		<div role="main" class="ui-content">
+			<h1>Your Basket</h1>
+			<div id="cart-wrapper"></div>
+			<p id="basket-total"></p>
+			<a href="/customer">Back to Order</a>
+			<a href="/customer#checkout">Go to Checkout</a>
+		</div>
+		<!-- /content -->
+	</div>
+</div>
+
+
+<div data-role="page" id="checkout">
+	<div class="example-wrapper">
+		<div role="main" class="ui-content ui-body-a">
+			<h1>Checkout</h1>
+			<div class="ui-grid-a" id="checkout-wrapper">
+
+				<div class="ui-block-a" id="address-wrapper">
+					<div class="ui-bar ui-bar-a">
+						<label for="text-basic">Address Line 1 :</label>
+						<input type="text" name="add1" id="add1" value="">
+
+						<label for="text-basic">Address Line 2 :</label>
+						<input type="text" name="add2" id="add2" value="">
+
+						<label for="text-basic">Address Line 3 :</label>
+						<input type="text" name="add3" id="add3" value="">
+
+						<label for="text-basic">Eircode :</label>
+						<input type="text" name="eircode" id="eircode" value="">
+
+						<label for="text-basic">Phone Number :</label>
+						<input type="text" name="phone-num" id="phone-num" value="">
+					</div>
+				</div>
+
+				<div class="ui-block-b" id="checkout-order">
+					<div class="ui-bar ui-bar-a">
+						<div id="checkout-contents"></div>
+					</div>
+				</div>
+
+			</div>
+			<p id="checkout-total">Total: </p>
+			<button id="complete-order" onclick="completeOrder()">Complete Order</button>
+
+			<a href="/customer">Back to Order</a>
+			<a href="/customer#basket">Go to Basket</a>
+		</div>
+		<!-- /content -->
+	</div>
+</div>
+
+
+<!-- Start of first page -->
+<div data-role="page" id="previousorders">
+	<div class="example-wrapper">
+
+		<div role="main" class="ui-content">
+			
+			<div id="pre-orders"></div>
+			
+		</div>
+		<!-- /content -->
+	</div>
+</div>
+<script>
+var user_id =localStorage.getItem('user_id');
+console.log(user_id);
+
+
+
+$.post("/DatabaseData").done(function(data){
+	$('#products-wrapper').html(data);
+
+	// when the + button is clicked increase the value in the closest input
+                    $('.plus').on('click', function(event){
+                    var q = $(this).closest('tr').find('.qty-box').val();
+                    q++;
+                    //console.log(q);
+                    $(this).closest('tr').find('.qty-box').val(q);
+                    var t = $(this).closest('tr').find('.price').attr('value');
+                    //console.log(t);
+                    var sum = q * t;
+                    $(this).closest('tr').find('.total-price').val(sum);
+
+
+                    var total_price = 0;
+                    $(".total-price").each(function(){ 
+                      total_price += parseFloat($(this).val()); 
+                      //console.log(total_price);
+                      });
+                      $('#total-sum').val(total_price); 
+                    })
+
+                    // minus button, decrease the value in the nearest input field
+                    $('.min').on('click', function(event){
+                    var x = $(this).closest('tr').find('.qty-box').val();
+                    if(x > 0){
+                    x--;
+                    //console.log(x);
+                    $(this).closest('tr').find('.qty-box').val(x);
+                    var r = $(this).closest('tr').find('.price').attr('value');
+                    //console.log(r);
+                    var sum = x * r;
+                    $(this).closest('tr').find('.total-price').val(sum);
+
+                    var total_price = 0;
+                    $(".total-price").each(function(){ 
+                      total_price += parseFloat($(this).val()); 
+                      //console.log(total_price);
+                      });
+                      $('#total-sum').val(total_price);
+
+                    }
+                    
+                    })
+});
+
+
+
+
+	function addToCart(){
+		var total = $('#total-sum').val();
+
+		var tempOrder = [];
+		$('.qty-box').each(function()
+		{
+            var z = $(this).val();
+
+            if(z > 0)
+            {
+            	var e = $(this).closest('tr').find('.p-title').html();
+            	tempOrder.push(e + ' x ' + z);
+         	}
+
+		});
+		console.log(tempOrder);
+		console.log('total:' + total);
+
+		sessionStorage.setItem('total',total);
+		sessionStorage.setItem('order',tempOrder);
+
+		var basketOrder = sessionStorage.getItem('order').split(',');
+		sessionStorage.setItem('cartOrder',basketOrder);
+
+		console.log(sessionStorage.getItem('order'));
+		var splitOrder = sessionStorage.getItem('order').split(',');
+		//$('#cart-wrapper').html(splitOrder);
+		$('#basket-total').html('€' + sessionStorage.getItem('total'));
+		$('#checkout-total').html('€' + sessionStorage.getItem('total'));
+
+		$('#cart-wrapper').html('');
+		$('#checkout-contents').html('');
+		$.each(basketOrder, function(index ,value){
+            $("#cart-wrapper").append('<p>' + value + '</p>');
+            $("#checkout-contents").append('<p>' + value + '</p>');
+        });
+
+	}
+
+	      
+
+function completeOrder(){
+	
+	var add1 = $('#add1').val();
+	var add2 = $('#add2').val();
+	var add3 = $('#add3').val();
+	var eircode = $('#eircode').val();
+	var phone = $('#phone-num').val();
+
+	var address = add1 + ', ' + add2 +',' + add3 + ', ' +eircode;
+	var orderTotal = sessionStorage.getItem('total');
+	var completeOrder = sessionStorage.getItem('order');
+
+	$.post("/CompleteOrder", {id: user_id , add: address, total: orderTotal,order:completeOrder, ph:phone}).done(function(data){
+
+	alert(data);
+	});	
+}
+
+$.post("/PreviousOrders").done(function(data){
+	$('#pre-orders').html(data);
+});
+
+</script>
+<!-- /page --> 
+{% endblock %}
